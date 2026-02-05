@@ -1,0 +1,140 @@
+
+# JapaPolicy AI - .gitignore
+
+# ENVIRONMENT & SECRETS (CRITICAL - NEVER COMMIT)
+
+.env
+.env.local
+.env.*.local
+*.env
+secrets.yaml
+secrets.json
+
+
+# PYTHON
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+
+# VIRTUAL ENVIRONMENTS
+
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+env.bak/
+venv.bak/
+pythonenv*/
+
+
+# VECTOR DATABASE (Large - Rebuild with build_db.py)
+
+chroma_db/
+chromadb/
+*.chromadb
+vector_store/
+faiss_index/
+*.faiss
+
+
+# MODEL CACHE (Large files)
+
+.cache/
+models/
+*.bin
+*.pt
+*.pth
+*.onnx
+sentence-transformers/
+
+
+# IDE & EDITORS
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+
+# OS FILES
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+
+# JUPYTER NOTEBOOKS
+
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+
+# TESTING & COVERAGE
+
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+
+# LOGS & TEMP FILES
+
+*.log
+*.tmp
+*.temp
+logs/
+temp/
+tmp/
+
+
+# STREAMLIT
+
+.streamlit/secrets.toml
+
+
+# data/
+# *.pdf
+
+
+# MISCELLANEOUS
+
+*.bak
+*.backup
+.history/
