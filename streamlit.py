@@ -554,7 +554,7 @@ with st.sidebar:
         st.markdown("""
         **JapaPolicy AI** uses:
         - 🤖 4 AI Agents
-        - 📚 50+ Official Docs
+        - 📚 60+ Official Docs
         - 🔍 Hybrid RAG Search
         
         ⚠️ *Not legal advice. Verify on gov.uk*
