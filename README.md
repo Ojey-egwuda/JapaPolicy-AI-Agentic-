@@ -1,8 +1,8 @@
 # 🇬🇧 JapaPolicy AI
 
-🚀 <a href="https://japapolicy.streamlit.app/" target="_blank" rel="noopener noreferrer">Live App</a>
+🚀 <a href="https://japapolicyai.streamlit.app/" target="_blank" rel="noopener noreferrer">Live App</a>
 
-👉 https://japapolicy.streamlit.app/
+👉 https://japapolicyai.streamlit.app/
 
 > **Your Intelligent UK Immigration Assistant** — An Agentic RAG system that answers complex UK immigration questions using multi-agent orchestration and retrieval-augmented generation.
 
