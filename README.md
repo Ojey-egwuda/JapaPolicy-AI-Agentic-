@@ -9,6 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_AI-orange.svg)](https://langchain-ai.github.io/langgraph/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-UI-red.svg)](https://streamlit.io)
+[![LangSmith](https://img.shields.io/badge/LangSmith-Observability-purple.svg)](https://smith.langchain.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -24,6 +25,7 @@
 - [Project Structure](#-project-structure)
 - [How It Works](#-how-it-works)
 - [Example Queries](#-example-queries)
+- [Performance](#-performance)
 - [Limitations](#-limitations)
 - [Future Improvements](#-future-improvements)
 - [Author](#-author)
@@ -33,9 +35,9 @@
 
 ## 🎯 Overview
 
-**JapaPolicy AI** is an intelligent assistant that helps users navigate the complex UK immigration system. Built using a multi-agent architecture with LangGraph, it processes over 50 official UK government documents to provide accurate, cited answers to immigration queries.
+**JapaPolicy AI** is an intelligent assistant that helps users navigate the complex UK immigration system. Built using a 5-agent architecture with LangGraph, it processes over 60 official UK government documents to provide accurate, cited answers to immigration queries.
 
-The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining the power of large language models with a specialized knowledge base of UK immigration rules, guidance documents, and policy updates.
+The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining the power of large language models with a specialised knowledge base of UK immigration rules, guidance documents, and policy updates. It features **HyDE** (Hypothetical Document Embeddings) for precision retrieval and **Query Decomposition** for handling complex multi-part questions.
 
 ### Why "Japa"?
 
@@ -45,17 +47,20 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
 
 ## ✨ Features
 
-| Feature                       | Description                                                        |
-| ----------------------------- | ------------------------------------------------------------------ |
-| 🤖 **Multi-Agent System**     | 4 specialized AI agents working together                           |
-| 📚 **50+ Official Documents** | Processes UK gov guidance, Immigration Rules, and policy documents |
-| 🔍 **Hybrid Search**          | Combines semantic search with BM25 keyword matching                |
-| 🌐 **Web Search**             | Fetches latest policy updates from gov.uk                          |
-| 💬 **Conversation Memory**    | Maintains context across multiple questions                        |
-| 📊 **Confidence Scoring**     | Rates answer reliability (High/Medium/Low)                         |
-| 📝 **Source Citations**       | Every answer includes document references                          |
-| 🌙 **Dark Mode Support**      | Modern UI that adapts to system theme                              |
-| ⚡ **Query Routing**          | Automatically classifies and routes queries                        |
+| Feature | Description |
+| --- | --- |
+| 🤖 **5-Agent Pipeline** | Decomposition → Router → Retriever → Analyst → Responder |
+| 🧪 **HyDE Retrieval** | Generates hypothetical answers to improve vector search precision |
+| ✂️ **Query Decomposition** | Breaks compound questions into atomic sub-queries before retrieval |
+| 📚 **60+ Official Documents** | Processes UK gov guidance, Immigration Rules, and policy documents |
+| 🔍 **Hybrid Search** | Combines semantic search with BM25 keyword matching via RRF |
+| 🌐 **Web Search** | Fetches latest policy updates from gov.uk via Tavily |
+| 💬 **Conversation Memory** | Maintains context across multiple questions |
+| 📊 **Confidence Scoring** | Rates answer reliability (High/Medium/Low) |
+| 📝 **Source Citations** | Every answer includes document references and page numbers |
+| 📡 **LangSmith Observability** | Full trace monitoring, latency breakdown, and token tracking |
+| 🌙 **Dark Mode Support** | Modern UI that adapts to system theme |
+| ⚡ **ChromaDB Warmup** | Pre-loads vector database at startup to eliminate cold-start latency |
 
 ---
 
@@ -68,42 +73,53 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     🔀 ROUTER AGENT                              │
-│  • Classifies query type (eligibility, switching, ILR, etc.)    │
-│  • Identifies visa category (Skilled Worker, Student, etc.)     │
-│  • Decomposes complex queries into sub-queries                  │
+│                  ✂️  DECOMPOSITION AGENT                         │
+│  • Detects compound multi-part questions                        │
+│  • Breaks into 2-4 atomic sub-queries                           │
+│  • Rule-based fallback if LLM decomposition fails               │
+│  • Skips LLM call entirely for simple queries                   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    🔍 RETRIEVER AGENT                            │
-│  • Searches vector database (ChromaDB)                          │
-│  • Performs hybrid search (semantic + BM25)                     │
-│  • Fetches web updates from gov.uk                              │
+│                     🔀 ROUTER AGENT                              │
+│  • Classifies query type (eligibility, switching, ILR, etc.)    │
+│  • Identifies visa category (Skilled Worker, Student, etc.)     │
+│  • Preserves sub-queries from Decomposition Agent               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 🔍 RETRIEVER AGENT (HyDE)                        │
+│  • Generates hypothetical regulatory passage (HyDE vector)      │
+│  • Searches ChromaDB with HyDE vector + atomic sub-queries      │
+│  • Performs hybrid search (semantic cosine + BM25 via RRF)      │
+│  • Fetches recent policy updates from gov.uk                    │
+│  • Runs date calculator and eligibility checker tools           │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    🔬 ANALYST AGENT                              │
-│  • Extracts key requirements from documents                     │
-│  • Identifies dates, deadlines, figures                         │
-│  • Assigns confidence score                                     │
-│  • Flags policy changes and ambiguities                         │
+│  • Synthesises documents, web results, and tool outputs         │
+│  • Extracts key requirements with exact figures                 │
+│  • Identifies policy change dates and deadlines                 │
+│  • Assigns confidence score (0.0–1.0)                           │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    💬 RESPONSE AGENT                             │
-│  • Generates user-friendly response                             │
-│  • Adds source citations                                        │
-│  • Adjusts tone based on confidence                             │
-│  • Includes next steps and recommendations                      │
+│  • Generates user-friendly structured response                  │
+│  • Adds source citations with document names and page numbers   │
+│  • Adjusts tone and certainty based on confidence score         │
+│  • Includes next steps and gov.uk verification note             │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                        FINAL ANSWER                              │
-│  With confidence badge, citations, and gov.uk verification note │
+│  Confidence badge · Source citations · gov.uk verification note │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,15 +127,17 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
 
 ## 🛠 Tech Stack
 
-| Component           | Technology                              |
-| ------------------- | --------------------------------------- |
-| **LLM**             | Google Gemini 2.0 Flash                 |
-| **Agent Framework** | LangGraph                               |
-| **Vector Database** | ChromaDB                                |
-| **Embeddings**      | sentence-transformers/all-mpnet-base-v2 |
-| **Web Search**      | Tavily API                              |
-| **Frontend**        | Streamlit                               |
-| **Language**        | Python 3.10+                            |
+| Component | Technology |
+| --- | --- |
+| **LLM** | Google Gemini 2.5 Flash |
+| **Agent Framework** | LangGraph |
+| **Vector Database** | ChromaDB (cosine similarity) |
+| **Embeddings** | sentence-transformers/all-mpnet-base-v2 (768 dims) |
+| **Keyword Search** | BM25Okapi with Reciprocal Rank Fusion |
+| **Web Search** | Tavily API |
+| **Observability** | LangSmith |
+| **Frontend** | Streamlit |
+| **Language** | Python 3.10+ |
 
 ---
 
@@ -154,6 +172,7 @@ source venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
+pip install langsmith
 ```
 
 ### Step 4: Set Up Environment Variables
@@ -163,34 +182,31 @@ Create a `.env` file in the project root:
 ```env
 # Required
 GOOGLE_API_KEY=your_google_api_key_here
-GOOGLE_MODEL=gemini-2.0-flash
+GOOGLE_MODEL=gemini-2.5-flash
 
-# Optional (for web search)
+# Optional — web search (recommended)
 TAVILY_API_KEY=tvly-your_tavily_api_key_here
+
+# Optional — observability (recommended)
+LANGSMITH_API_KEY=ls__your_key_here
+LANGSMITH_PROJECT=japapolicy-ai
+LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com
 ```
 
 **Get API Keys:**
-
-- Google API Key: [Google AI Studio](https://makersuite.google.com/app/apikey)
-- Tavily API Key: [Tavily](https://tavily.com/) (optional, for web search)
+- Google API Key: [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Tavily API Key: [Tavily](https://tavily.com/)
+- LangSmith Key: [LangSmith](https://smith.langchain.com) → Settings → API Keys
 
 ### Step 5: Add Immigration Documents
 
-Place UK immigration PDF documents in the `./data/` folder:
+Place UK immigration PDF documents in the `./data/` folder. Recommended documents:
 
-```
-data/
-├── Skilled_Worker_Guidance.pdf
-├── Student_Visa_Rules.pdf
-├── Family_Visa_Guidance.pdf
-├── ILR_Requirements.pdf
-└── ... (other official documents)
-```
-
-**Recommended documents to include:**
-
-- Immigration Rules (Appendix Skilled Worker, Student, etc.)
-- Home Office caseworker guidance
+- Immigration Rules Appendix Skilled Worker
+- Immigration Rules Appendix Skilled Occupations (Tables 1, 2, 3)
+- Home Office caseworker guidance (Skilled Worker, Student, Family)
+- Section 3C and 3D Leave guidance
+- ILR guidance documents
 - Gov.uk visa guidance pages (saved as PDF)
 
 ### Step 6: Build the Vector Database
@@ -199,22 +215,14 @@ data/
 python build_db.py
 ```
 
-This will:
-
-- Process all PDFs in `./data/`
-- Create embeddings using sentence-transformers
-- Store in ChromaDB at `./chroma_db/`
-
-**Expected output:**
-
+Expected output:
 ```
-Loading documents from ./data...
-Found 52 PDF files
-Processing: Skilled_Worker_Guidance.pdf...
+📄 Found 60 PDF files
 ...
-Total pages processed: 1,731
-Building vector database...
-Database built successfully!
+📊 Total pages loaded: 2,366
+✅ DATABASE BUILD COMPLETE
+   • Total chunks: 2,366
+   • Hybrid search: ✅ Enabled
 ```
 
 ---
@@ -229,25 +237,25 @@ streamlit run streamlit_app.py
 
 Then open your browser to `http://localhost:8501`
 
-### Option 2: Command Line Interface
+### Option 2: Command Line — Test Mode
 
 ```bash
-# Interactive mode
-python -m src.app
-
-# Test mode (runs predefined test queries)
 python -m src.app --test
 ```
 
-### Option 3: Python API
+### Option 3: Command Line — Interactive Mode
+
+```bash
+python -m src.app
+```
+
+### Option 4: Python API
 
 ```python
 from src.app import AgenticRAGAssistant
 
-# Initialize
 assistant = AgenticRAGAssistant(enable_memory=True)
 
-# Ask a question
 result = assistant.invoke(
     "What is the minimum salary for a Skilled Worker visa?",
     thread_id="my_session"
@@ -255,6 +263,7 @@ result = assistant.invoke(
 
 print(result["answer"])
 print(f"Confidence: {result['confidence']}")
+print(f"Query type: {result['query_type']}")
 ```
 
 ---
@@ -274,9 +283,12 @@ japapolicy-ai/
 │   ├── app.py                  # Main application & AgenticRAGAssistant class
 │   ├── state.py                # AgentState TypedDict definition
 │   ├── tools.py                # Tool implementations (search, calculate, etc.)
-│   ├── workers.py              # All 4 agent implementations
+│   ├── workers.py              # Router, Analyst, Responder agents
+│   ├── decomposition.py        # Decomposition agent (pre-router)
+│   ├── hyde_retriever.py       # HyDE-enhanced retriever agent
 │   ├── graph.py                # LangGraph workflow definition
-│   └── vectordb.py             # ChromaDB wrapper with hybrid search
+│   ├── tracing.py              # LangSmith observability setup
+│   └── vectordb.py             # ChromaDB wrapper with hybrid search + caching
 │
 ├── streamlit_app.py            # Streamlit web interface
 ├── build_db.py                 # Database builder script
@@ -290,98 +302,113 @@ japapolicy-ai/
 
 ## ⚙️ How It Works
 
-### 1. Router Agent
+### 1. Decomposition Agent
+Runs before the router on every query. Detects compound multi-part questions (e.g. "can I work AND can I travel?") and breaks them into independent atomic sub-queries. Simple queries skip the LLM call entirely for speed. Falls back to rule-based splitting if the LLM fails.
 
-Classifies incoming queries and determines the best approach:
+### 2. Router Agent
+Classifies the query type and visa category. Preserves the decomposed sub-queries from the Decomposition Agent rather than overwriting them. Almost never asks for clarification — infers context from keywords.
 
 - **Query Types:** visa_eligibility, visa_switching, visa_extension, ilr_application, citizenship, general_info
 - **Visa Categories:** skilled_worker, health_care, student, graduate, family, visitor, global_talent
 
-### 2. Retriever Agent
+### 3. Retriever Agent (HyDE)
+The core retrieval innovation. Instead of searching with the raw user question, it first generates a **hypothetical regulatory passage** that would answer the query — then uses that passage as the search vector. This closes the embedding space gap between questions and regulatory document text, significantly improving retrieval precision.
 
-Gathers relevant information using multiple tools:
+Retrieval pipeline per query:
+1. Generate HyDE hypothetical passage (LLM call)
+2. Vector search with HyDE passage → typically 87–93% cosine similarity
+3. Vector search with each atomic sub-query → 80–87% similarity
+4. Hybrid search: semantic cosine + BM25 keyword via Reciprocal Rank Fusion
+5. Web search for recent gov.uk policy updates (Tavily)
+6. Date calculator and eligibility checker tools where relevant
 
-- **Vector Search:** Semantic search through immigration documents
-- **Web Search:** Latest updates from gov.uk (via Tavily)
-- **Hybrid Search:** Combines semantic + keyword (BM25) matching
+### 4. Analyst Agent
+Synthesises all retrieved context — documents, web results, tool outputs — into a structured analysis. Assigns a confidence score (0.0–1.0) based on source quality. Context is trimmed to ~1,500 chars per document set to keep token counts efficient.
 
-### 3. Analyst Agent
-
-Processes retrieved information:
-
-- Extracts key requirements and figures
-- Identifies dates and deadlines
-- Flags policy changes
-- Assigns confidence score (0.0-1.0)
-
-### 4. Response Agent
-
-Generates the final answer:
-
-- Structures response clearly
-- Adds source citations
-- Adjusts tone based on confidence
-- Includes verification recommendations
+### 5. Response Agent
+Generates the final user-facing answer with section headers, bullet points, source citations (document name + page number), and a gov.uk verification note. Tone adjusts based on confidence score.
 
 ### Tools Available
 
-| Tool                      | Purpose                                 |
-| ------------------------- | --------------------------------------- |
-| `search_immigration_docs` | Vector database search                  |
-| `search_govuk_updates`    | Web search for recent policy changes    |
-| `calculate_visa_dates`    | Calculate ILR eligibility, visa expiry  |
-| `check_basic_eligibility` | Pre-check visa eligibility requirements |
+| Tool | Purpose |
+| --- | --- |
+| `search_immigration_docs` | Hybrid vector + BM25 search through 60+ documents |
+| `search_govuk_updates` | Live web search for recent policy changes via Tavily |
+| `calculate_visa_dates` | ILR eligibility dates, visa expiry, absence compliance |
+| `check_basic_eligibility` | Pre-check salary, sponsorship, and English requirements |
 
 ---
 
 ## 💬 Example Queries
 
-The system handles a wide range of UK immigration questions:
-
-**Visa Eligibility**
-
+**Simple eligibility**
 - "What is the minimum salary for a Skilled Worker visa?"
+- "Am I exempt from the English language test with a Nigerian degree?"
 - "Can I bring my family on a Student visa?"
-- "Am I exempt from the English test with a Nigerian degree?"
 
-**Visa Switching**
-
-- "Can I switch from Graduate to Skilled Worker visa?"
-- "Can a visitor switch to a spouse visa inside the UK?"
+**Visa switching**
+- "Can I switch from a Graduate visa to a Skilled Worker visa inside the UK?"
+- "Can a visitor switch to a spouse visa without leaving the UK?"
 
 **Settlement (ILR)**
+- "How long do I need to be on a Skilled Worker visa before applying for ILR?"
+- "I spent 210 days outside the UK across 5 years — am I still eligible for ILR?"
 
-- "How long do I need to work to get ILR?"
-- "What happens if I spend 200 days outside the UK?"
+**Section 3C / pending applications**
+- "My visa expires next week but my extension is pending — can I still work?"
+- "My sponsor's licence was suspended while my application is pending — what happens?"
 
-**Complex Scenarios**
+**Complex compound queries**
+- "I'm on a Graduate visa expiring in 6 weeks, I have a job offer for £35,000, my employer has a sponsor licence — can I switch to Skilled Worker, and if my application is pending can I still work and travel to Nigeria?"
 
-- "My visa expires next week but my extension is pending. Can I work?"
-- "What happens if I overstay by 45 days?"
+---
+
+## 📊 Performance
+
+Benchmarked using LangSmith traces across 10 complex immigration queries:
+
+| Node | Typical Latency |
+| --- | --- |
+| Decomposition | 0–2s (0s for simple queries) |
+| Router | ~1.5–2s |
+| Retriever (HyDE + 2 sub-queries) | ~8–10s |
+| Analyst | ~10–13s |
+| Responder | ~5–6s |
+| **Total end-to-end** | **~28–35s** |
+
+**Retrieval quality:**
+- HyDE vector search: 87–93% cosine similarity on official documents
+- Without HyDE (raw query): often 0 results on the same queries
+
+**Confidence distribution across 10 stress-test queries:**
+- HIGH (≥0.8): 8/10 queries
+- MEDIUM (0.6–0.8): 2/10 queries
+- LOW: 0/10 queries
 
 ---
 
 ## ⚠️ Limitations
 
-| Limitation             | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
-| **Not Legal Advice**   | This is an AI assistant, not a qualified immigration adviser |
-| **Document Freshness** | Answers depend on the documents in your database             |
-| **Complex Cases**      | Edge cases may require professional consultation             |
-| **No Case Assessment** | Cannot assess individual applications                        |
-| **UK Only**            | Focused exclusively on UK immigration                        |
+| Limitation | Description |
+| --- | --- |
+| **Not Legal Advice** | This is an AI assistant, not a qualified immigration adviser |
+| **Document Freshness** | Answers depend on the documents in your database — rebuild periodically |
+| **SOC Table Lookup** | Specific going rates require Appendix Skilled Occupations Tables 1–3 in data/ |
+| **Processing Times** | Live UKVI processing times require Tavily API for accurate results |
+| **Complex Cases** | Edge cases may require professional consultation |
+| **UK Only** | Focused exclusively on UK immigration |
 
 ---
 
 ## 🔮 Future Improvements
 
-- [ ] Add more authoritative facts for common queries
-- [ ] Implement document freshness checking
-- [ ] Add user feedback mechanism
-- [ ] Create API endpoint for integration
-- [ ] Add multi-language support
-- [ ] Implement caching for frequent queries
-- [ ] Add analytics dashboard
+- [ ] Contextual compression to further reduce analyst token cost
+- [ ] Semantic caching for repeated queries
+- [ ] Document freshness checking with auto-rebuild alerts
+- [ ] User feedback mechanism with LangSmith annotation
+- [ ] API endpoint for third-party integration
+- [ ] Multi-language support
+- [ ] Analytics dashboard
 - [ ] Support for document uploads by users
 
 ---
