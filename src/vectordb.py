@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 
 
-# ── Module-level caches — load once, reused on every query ───────────────────
+# Module-level caches — load once, reused on every query
 _embedding_model_cache = None
 _chroma_client_cache = None
 
@@ -25,8 +25,7 @@ def get_chroma_client(path: str = "./chroma_db"):
     return _chroma_client_cache
 
 
-# ── VectorDB class ────────────────────────────────────────────────────────────
-
+# VectorDB class
 class VectorDB:
     """
     Advanced vector database wrapper using ChromaDB with cosine similarity

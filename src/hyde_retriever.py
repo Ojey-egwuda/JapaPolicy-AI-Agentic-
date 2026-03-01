@@ -37,8 +37,7 @@ from .tools import (
 )
 
 
-# ── LLM helper (reuse the same factory as workers.py) ────────────────────────
-
+# LLM helper (reuse the same factory as workers.py)
 def get_llm(temperature: float = 0.0):
     return ChatGoogleGenerativeAI(
         model=os.getenv("GOOGLE_MODEL", "gemini-2.0-flash"),
@@ -47,8 +46,7 @@ def get_llm(temperature: float = 0.0):
     )
 
 
-# ── HyDE prompt ──────────────────────────────────────────────────────────────
-
+# HyDE prompt
 HYDE_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a UK immigration policy expert writing official guidance.
 
@@ -84,8 +82,7 @@ def generate_hypothetical_passage(query: str) -> str:
         return query
 
 
-# ── Retriever agent (HyDE-enhanced) ──────────────────────────────────────────
-
+# Retriever agent (HyDE-enhanced)
 def retriever_agent(state: AgentState) -> Dict[str, Any]:
     """
     AGENT 2: HyDE-enhanced Retriever.
@@ -104,11 +101,11 @@ def retriever_agent(state: AgentState) -> Dict[str, Any]:
     all_web       = []
     tool_results  = []
 
-    # ── Step 1: Generate HyDE vector ────────────────────────────────────────
+    # Step 1: Generate HyDE vector
     print("   ├─ 🧪 Generating HyDE search vector…")
     hyde_vector = generate_hypothetical_passage(query)
 
-    # ── Step 2: Vector search — HyDE vector + each sub-query ────────────────
+    # Step 2: Vector search — HyDE vector + each sub-query
     # Search once with the HyDE vector (highest signal), then with sub-queries
     search_inputs = [hyde_vector] + [
         f"{visa_category} {sq}" if visa_category not in ("unknown", "other", "")
@@ -133,7 +130,7 @@ def retriever_agent(state: AgentState) -> Dict[str, Any]:
         except Exception as e:
             print(f"   │  ⚠️  Doc search error: {e}")
 
-    # ── Step 3: Web search for recent gov.uk updates ─────────────────────────
+    # Step 3: Web search for recent gov.uk updates
     print("   ├─ 🌐 Searching gov.uk for recent updates…")
     web_keywords = []
     if "section 3c" in query_lower:
@@ -157,7 +154,7 @@ def retriever_agent(state: AgentState) -> Dict[str, Any]:
     except Exception as e:
         print(f"   │  ⚠️  Web search failed: {e}")
 
-    # ── Step 4: Date calculator (if timing / dates mentioned) ────────────────
+    # Step 4: Date calculator (if timing / dates mentioned)
     date_keywords = [
         "expire", "expiry", "expires", "ilr", "settlement", "how long",
         "days outside", "absence", "continuous residence", "5 years",
@@ -186,7 +183,7 @@ def retriever_agent(state: AgentState) -> Dict[str, Any]:
         except Exception as e:
             print(f"   │  ⚠️  Date calc error: {e}")
 
-    # ── Step 5: Eligibility checker (if eligibility question) ────────────────
+    # Step 5: Eligibility checker (if eligibility question)
     eligibility_keywords = [
         "eligible", "eligibility", "qualify", "can i apply",
         "requirements", "minimum salary", "do i need", "am i allowed",

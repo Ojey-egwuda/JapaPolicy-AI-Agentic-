@@ -58,8 +58,7 @@ class AgenticRAGAssistant:
         print("=" * 60)
         print("Agentic RAG Assistant Ready\n")
 
-    # ── Conversation helpers ──────────────────────────────────────────────────
-
+    # Conversation helpers
     def _get_conversation_context(self, thread_id: str, max_turns: int = 5) -> str:
         if thread_id not in self.conversation_history:
             return ""
@@ -98,8 +97,7 @@ class AgenticRAGAssistant:
                 return f"Previous question: {last_q}\nFollow-up question: {question}"
         return question
 
-    # ── Main invoke ───────────────────────────────────────────────────────────
-
+    # Main invoke 
     def invoke(self, question: str, thread_id: str = None) -> Dict[str, Any]:
         """
         Process a user question through the full agent pipeline.
@@ -192,8 +190,7 @@ class AgenticRAGAssistant:
             print(f"\nError during processing: {e}")
             return self._empty_response(f"An error occurred: {str(e)}")
 
-    # ── History management ────────────────────────────────────────────────────
-
+    # History management
     def clear_history(self, thread_id: str = None):
         if thread_id:
             self.conversation_history.pop(thread_id, None)
@@ -229,7 +226,7 @@ def create_assistant(**kwargs) -> AgenticRAGAssistant:
     return AgenticRAGAssistant(**kwargs)
 
 
-# ── CLI entry point ───────────────────────────────────────────────────────────
+# CLI entry point
 if __name__ == "__main__":
     import sys
 

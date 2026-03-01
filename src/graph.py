@@ -54,8 +54,7 @@ from .workers import (
 configure_tracing(project_name="japapolicy-ai")
 
 
-# ── Conditional edge functions ────────────────────────────────────────────────
-
+# Conditional edge functions
 def should_clarify(state: AgentState) -> Literal["clarify", "retrieve"]:
     if state.get("needs_clarification", False):
         return "clarify"
@@ -68,8 +67,7 @@ def check_confidence(state: AgentState) -> Literal["review", "respond"]:
     return "respond"
 
 
-# ── Graph builder ─────────────────────────────────────────────────────────────
-
+# Graph builder
 def build_graph(with_memory: bool = True):
     """
     Build and compile the LangGraph workflow.

@@ -26,7 +26,7 @@ from .tools import (
 )
 
 
-# ── LLM ──────────────────────────────────────────────────────────────────────
+# LLM
 
 def get_llm(temperature: float = 0.0):
     """Get configured LLM instance."""
@@ -37,8 +37,7 @@ def get_llm(temperature: float = 0.0):
     )
 
 
-# ── Policy awareness ──────────────────────────────────────────────────────────
-
+# Policy awareness
 MAJOR_POLICY_CHANGES = """
 CRITICAL POLICY CHANGES (be aware of these):
 
@@ -91,8 +90,7 @@ def is_temporal_query(query: str) -> bool:
     return any(i in query.lower() for i in temporal_indicators)
 
 
-# ── AGENT 1: Router ───────────────────────────────────────────────────────────
-
+# AGENT 1: Router
 ROUTER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert UK immigration query router. Analyze the user's question and classify it.
 
@@ -193,7 +191,7 @@ def router_agent(state: AgentState) -> Dict[str, Any]:
             else:
                 visa_category = "skilled_worker"
 
-        # ── Preserve decomposition agent output ──────────────────────────────
+        # Preserve decomposition agent output
         # If decomposition_agent already produced sub-queries, keep them.
         # Only fall back to router's own decomposition if state is empty.
         existing_decomposition = state.get("decomposed_queries", [])
@@ -237,13 +235,12 @@ def router_agent(state: AgentState) -> Dict[str, Any]:
         }
 
 
-# ── AGENT 2: Retriever ────────────────────────────────────────────────────────
+# AGENT 2: Retriever
 # NOTE: retriever_agent is defined in hyde_retriever.py and imported by graph.py
 # This file intentionally does not define retriever_agent to avoid conflicts.
 
 
-# ── AGENT 3: Analyst ──────────────────────────────────────────────────────────
-
+# AGENT 3: Analyst
 ANALYST_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a UK immigration policy analyst. Analyze the retrieved documents and provide accurate information.
 
@@ -309,19 +306,19 @@ def analyst_agent(state: AgentState) -> Dict[str, Any]:
     llm   = get_llm(temperature=0.0)
     chain = ANALYST_PROMPT | llm | StrOutputParser()
 
-    # ── Format retrieved docs — 1500 chars per doc set (was 3000) ────────────
+    # Format retrieved docs — 1500 chars per doc set (was 3000)
     docs_text = ""
     for doc_set in state.get("retrieved_docs", []):
         docs_text += f"\n--- Search: {doc_set['sub_query'][:50]} ---\n"
         docs_text += doc_set["results"][:1500]
 
-    # ── Format web results — 1000 chars (was 2000) ───────────────────────────
+    # Format web results — 1000 chars (was 2000)
     web_text = ""
     for web_set in state.get("web_results", []):
         web_text += "\n--- Web Results ---\n"
         web_text += web_set["results"][:1000]
 
-    # ── Format tool results ───────────────────────────────────────────────────
+    # Format tool results
     tool_text = ""
     for tool_result in state.get("tool_results", []):
         tool_text += f"\n--- {tool_result['tool'].replace('_', ' ').title()} ---\n"
@@ -426,7 +423,7 @@ def analyst_agent(state: AgentState) -> Dict[str, Any]:
         }
 
 
-# ── AGENT 4: Responder ────────────────────────────────────────────────────────
+# AGENT 4: Responder
 
 RESPONSE_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are JapaPolicy AI, an expert UK Immigration Policy Assistant.
@@ -544,7 +541,7 @@ def response_agent(state: AgentState) -> Dict[str, Any]:
         }
 
 
-# ── Clarification node ────────────────────────────────────────────────────────
+# Clarification node
 
 def clarification_node(state: AgentState) -> Dict[str, Any]:
     """Handle cases where clarification is genuinely needed (rare)."""
@@ -556,7 +553,7 @@ def clarification_node(state: AgentState) -> Dict[str, Any]:
     }
 
 
-# ── Human review node ─────────────────────────────────────────────────────────
+# Human review node
 
 def human_review_node(state: AgentState) -> Dict[str, Any]:
     """Flag response for human review when confidence is very low."""
