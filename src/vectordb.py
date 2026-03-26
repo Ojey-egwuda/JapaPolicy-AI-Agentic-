@@ -1,8 +1,9 @@
-import os
 import chromadb
 from typing import List, Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
+
+from .config import settings
 
 
 # Module-level caches — load once, reused on every query
@@ -18,10 +19,10 @@ def get_embedding_model(model_name: str):
     return _embedding_model_cache
 
 
-def get_chroma_client(path: str = "./chroma_db"):
+def get_chroma_client(path: Optional[str] = None):
     global _chroma_client_cache
     if _chroma_client_cache is None:
-        _chroma_client_cache = chromadb.PersistentClient(path=path)
+        _chroma_client_cache = chromadb.PersistentClient(path=path or settings.chroma_db_path)
     return _chroma_client_cache
 
 
@@ -32,7 +33,7 @@ class VectorDB:
     and hybrid search (semantic + keyword matching).
     """
 
-    def __init__(self, collection_name: str = None, embedding_model: str = None):
+    def __init__(self, collection_name: Optional[str] = None, embedding_model: Optional[str] = None):
         """
         Initialize the vector database with cosine similarity.
 
@@ -40,14 +41,8 @@ class VectorDB:
             collection_name: Name of the ChromaDB collection
             embedding_model: HuggingFace model name for embeddings
         """
-        self.collection_name = collection_name or os.getenv(
-            "CHROMA_COLLECTION_NAME", "uk_immigration_docs"
-        )
-
-        self.embedding_model_name = embedding_model or os.getenv(
-            "EMBEDDING_MODEL",
-            "sentence-transformers/all-mpnet-base-v2"
-        )
+        self.collection_name = collection_name or settings.chroma_collection_name
+        self.embedding_model_name = embedding_model or settings.embedding_model
 
         # Initialize ChromaDB client (cached singleton)
         self.client = get_chroma_client()

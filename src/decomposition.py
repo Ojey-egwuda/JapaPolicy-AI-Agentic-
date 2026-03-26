@@ -29,7 +29,6 @@ INTEGRATION
    in workers.py, graph.py, or state.py (state already has the field).
 """
 
-import os
 import re
 from typing import Dict, Any, List
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -37,14 +36,15 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 
 from .state import AgentState
+from .config import settings
 
 
 # LLM factory
 def get_llm(temperature: float = 0.0):
     return ChatGoogleGenerativeAI(
-        model=os.getenv("GOOGLE_MODEL", "gemini-2.0-flash"),
+        model=settings.google_model,
         temperature=temperature,
-        api_key=os.getenv("GOOGLE_API_KEY"),
+        api_key=settings.google_api_key,
     )
 
 

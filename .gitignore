@@ -138,3 +138,6 @@ tmp/
 *.bak
 *.backup
 .history/
+# SQLITE RUNTIME DATABASES
+conversations.db
+updater_state.db

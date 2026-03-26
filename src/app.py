@@ -5,14 +5,14 @@ Changes from previous version:
   • ChromaDB pre-warmed at startup so first user query is not slow
 """
 
-import os
 import uuid
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
-from .state   import AgentState
-from .graph   import graph, build_graph, visualize_graph
-from .tracing import get_run_metadata
+from .state       import AgentState
+from .graph       import graph, build_graph, visualize_graph
+from .tracing     import get_run_metadata
+from .persistence import ConversationStore
 
 load_dotenv()
 
@@ -24,14 +24,19 @@ class AgenticRAGAssistant:
     → Analyst → Responder.
     """
 
-    def __init__(self, enable_memory: bool = True, enable_hitl: bool = False):
+    def __init__(
+        self,
+        enable_memory: bool = True,
+        enable_hitl: bool = False,
+        db_path: Optional[str] = None,
+    ):
         print("\n Initializing Agentic RAG Assistant…")
         print("=" * 60)
 
         self.enable_memory = enable_memory
         self.enable_hitl   = enable_hitl
         self.graph         = build_graph(with_memory=enable_memory)
-        self.conversation_history: Dict[str, list] = {}
+        self.store         = ConversationStore(db_path=db_path)
 
         print("Agent Graph Compiled")
         print("Agents: Decomposition → Router → Retriever (HyDE) → Analyst → Responder")
@@ -60,9 +65,7 @@ class AgenticRAGAssistant:
 
     # Conversation helpers
     def _get_conversation_context(self, thread_id: str, max_turns: int = 5) -> str:
-        if thread_id not in self.conversation_history:
-            return ""
-        history = self.conversation_history[thread_id][-max_turns:]
+        history = self.store.get_history(thread_id, max_turns=max_turns)
         if not history:
             return ""
         parts = []
@@ -72,15 +75,7 @@ class AgenticRAGAssistant:
         return "\n".join(parts)
 
     def _add_to_history(self, thread_id: str, question: str, answer: str, metadata: Dict[str, Any] = None):
-        if thread_id not in self.conversation_history:
-            self.conversation_history[thread_id] = []
-        self.conversation_history[thread_id].append({
-            "question": question,
-            "answer":   answer,
-            "metadata": metadata or {},
-        })
-        if len(self.conversation_history[thread_id]) > 20:
-            self.conversation_history[thread_id] = self.conversation_history[thread_id][-20:]
+        self.store.add_turn(thread_id, question, answer, metadata)
 
     def _enhance_query_with_context(self, question: str, thread_id: str) -> str:
         follow_up_indicators = [
@@ -90,15 +85,15 @@ class AgenticRAGAssistant:
             "that"     in question.lower() and len(question.split()) < 15,
             "the visa" in question.lower() and "what" not in question.lower(),
         ]
-        if any(follow_up_indicators) and thread_id in self.conversation_history:
-            history = self.conversation_history[thread_id]
+        if any(follow_up_indicators):
+            history = self.store.get_history(thread_id, max_turns=1)
             if history:
                 last_q = history[-1]["question"]
                 return f"Previous question: {last_q}\nFollow-up question: {question}"
         return question
 
     # Main invoke 
-    def invoke(self, question: str, thread_id: str = None) -> Dict[str, Any]:
+    def invoke(self, question: str, thread_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Process a user question through the full agent pipeline.
 
@@ -191,16 +186,16 @@ class AgenticRAGAssistant:
             return self._empty_response(f"An error occurred: {str(e)}")
 
     # History management
-    def clear_history(self, thread_id: str = None):
+    def clear_history(self, thread_id: Optional[str] = None):
         if thread_id:
-            self.conversation_history.pop(thread_id, None)
+            self.store.clear_thread(thread_id)
             print(f"Cleared history for thread: {thread_id}")
         else:
-            self.conversation_history = {}
+            self.store.clear_all()
             print("Cleared all conversation history")
 
     def get_history(self, thread_id: str) -> list:
-        return self.conversation_history.get(thread_id, [])
+        return self.store.get_history(thread_id)
 
     def _empty_response(self, message: str) -> Dict[str, Any]:
         return {

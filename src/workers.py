@@ -8,7 +8,6 @@ Changes from previous version:
   • Cuts analyst latency from ~23s back to ~13s
 """
 
-import os
 import re
 from datetime import datetime
 from typing import Dict, Any, List
@@ -18,6 +17,8 @@ from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from pydantic import BaseModel, Field
 
 from .state import AgentState
+from .config import settings
+from .utils import get_freshness_warning
 from .tools import (
     search_immigration_docs,
     search_govuk_updates,
@@ -31,9 +32,9 @@ from .tools import (
 def get_llm(temperature: float = 0.0):
     """Get configured LLM instance."""
     return ChatGoogleGenerativeAI(
-        model=os.getenv("GOOGLE_MODEL", "gemini-2.5-flash"),
+        model=settings.google_model,
         temperature=temperature,
-        api_key=os.getenv("GOOGLE_API_KEY")
+        api_key=settings.google_api_key,
     )
 
 
@@ -62,23 +63,6 @@ CRITICAL POLICY CHANGES (be aware of these):
    - Student outside London: £1,023/month
 """
 
-
-def get_freshness_warning(query: str) -> str:
-    """Return a warning if the query relates to recently changed policy."""
-    query_lower = query.lower()
-    warnings = []
-
-    if any(w in query_lower for w in ["student", "dependant", "dependent"]) and "skilled" not in query_lower:
-        warnings.append("⚠️ Student dependant rules changed significantly in January 2024.")
-
-    if any(w in query_lower for w in ["salary", "threshold", "minimum"]) and \
-       any(w in query_lower for w in ["skilled", "worker", "work"]):
-        warnings.append("⚠️ Skilled Worker salary thresholds changed on 4 April 2024. General: £38,700, New entrant: £30,960.")
-
-    if any(w in query_lower for w in ["care worker", "carer", "6135", "6136"]):
-        warnings.append("⚠️ Care workers applying on/after 11 March 2024 cannot bring dependants.")
-
-    return " ".join(warnings) if warnings else ""
 
 
 def is_temporal_query(query: str) -> bool:
@@ -149,13 +133,12 @@ def router_agent(state: AgentState) -> Dict[str, Any]:
     """
     print("\n🔀 [Router Agent] Analyzing query...")
 
-    llm   = get_llm(temperature=0.0)
-    chain = ROUTER_PROMPT | llm | JsonOutputParser()
-
     query       = state["query"]
     query_lower = query.lower()
 
     try:
+        llm   = get_llm(temperature=0.0)
+        chain = ROUTER_PROMPT | llm | JsonOutputParser()
         result = chain.invoke({"query": query})
 
         # Only ask clarification for genuinely meaningless queries

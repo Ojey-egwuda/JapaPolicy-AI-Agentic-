@@ -15,11 +15,15 @@ from typing import List
 
 load_dotenv()
 
+from src.config import settings
 
-def load_documents(data_dir: str = "data") -> List[Document]:
+
+def load_documents(data_dir: str = None) -> List[Document]:
     """
     Load all UK visa policy PDFs from the data directory.
     """
+    if data_dir is None:
+        data_dir = settings.data_dir
     results = []
     
     print(f"\n📂 Loading documents from '{data_dir}' directory...")
@@ -69,8 +73,8 @@ def build_vector_database():
     documents = load_documents()
     
     if not documents:
-        print("❌ No documents found in 'data' directory. Aborting.")
-        print("\n💡 Tip: Place your gov.uk PDF files in the 'data/' folder")
+        print(f"❌ No documents found in '{settings.data_dir}' directory. Aborting.")
+        print(f"\n💡 Tip: Place your gov.uk PDF files in the '{settings.data_dir}/' folder")
         return
     
     print(f"✅ Loaded {len(documents)} document pages.")

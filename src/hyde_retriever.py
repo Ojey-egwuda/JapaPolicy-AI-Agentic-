@@ -21,7 +21,6 @@ the one defined here, then add the HyDE helper above it.
 Keep all other agents (router, analyst, response) unchanged.
 """
 
-import os
 from datetime import datetime
 from typing import Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -29,6 +28,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from .state import AgentState
+from .config import settings
 from .tools import (
     search_immigration_docs,
     search_govuk_updates,
@@ -37,12 +37,12 @@ from .tools import (
 )
 
 
-# LLM helper (reuse the same factory as workers.py)
+# LLM helper — shares the same config as workers.py
 def get_llm(temperature: float = 0.0):
     return ChatGoogleGenerativeAI(
-        model=os.getenv("GOOGLE_MODEL", "gemini-2.0-flash"),
+        model=settings.google_model,
         temperature=temperature,
-        api_key=os.getenv("GOOGLE_API_KEY"),
+        api_key=settings.google_api_key,
     )
 
 

@@ -45,17 +45,3 @@ def get_freshness_warning(query: str) -> str:
         )
     
     return "\n".join(warnings) if warnings else ""
-
-
-def should_flag_temporal_query(query: str) -> bool:
-    """
-    Check if query asks about past/future rules that need special handling.
-    """
-    temporal_indicators = [
-        "2022", "2023", "2024", "2025", "2026", "2027",
-        "last year", "next year", "will change", "used to be",
-        "before", "after", "when did", "compare"
-    ]
-    
-    query_lower = query.lower()
-    return any(indicator in query_lower for indicator in temporal_indicators)

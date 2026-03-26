@@ -2,8 +2,6 @@
 
 🚀 <a href="https://japapolicyai.streamlit.app/" target="_blank" rel="noopener noreferrer">Live App</a>
 
-👉 https://japapolicyai.streamlit.app/
-
 > **Your Intelligent UK Immigration Assistant** — An Agentic RAG system that answers complex UK immigration questions using multi-agent orchestration and retrieval-augmented generation.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
@@ -24,6 +22,8 @@
 - [Usage](#-usage)
 - [Project Structure](#-project-structure)
 - [How It Works](#-how-it-works)
+- [Document Updater](#-document-updater)
+- [Testing](#-testing)
 - [Example Queries](#-example-queries)
 - [Performance](#-performance)
 - [Limitations](#-limitations)
@@ -47,20 +47,22 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
 
 ## ✨ Features
 
-| Feature                        | Description                                                          |
-| ------------------------------ | -------------------------------------------------------------------- |
-| 🤖 **5-Agent Pipeline**        | Decomposition → Router → Retriever → Analyst → Responder             |
-| 🧪 **HyDE Retrieval**          | Generates hypothetical answers to improve vector search precision    |
-| ✂️ **Query Decomposition**     | Breaks compound questions into atomic sub-queries before retrieval   |
-| 📚 **60+ Official Documents**  | Processes UK gov guidance, Immigration Rules, and policy documents   |
-| 🔍 **Hybrid Search**           | Combines semantic search with BM25 keyword matching via RRF          |
-| 🌐 **Web Search**              | Fetches latest policy updates from gov.uk via Tavily                 |
-| 💬 **Conversation Memory**     | Maintains context across multiple questions                          |
-| 📊 **Confidence Scoring**      | Rates answer reliability (High/Medium/Low)                           |
-| 📝 **Source Citations**        | Every answer includes document references and page numbers           |
-| 📡 **LangSmith Observability** | Full trace monitoring, latency breakdown, and token tracking         |
-| 🌙 **Dark Mode Support**       | Modern UI that adapts to system theme                                |
-| ⚡ **ChromaDB Warmup**         | Pre-loads vector database at startup to eliminate cold-start latency |
+| Feature | Description |
+| --- | --- |
+| 🤖 **5-Agent Pipeline** | Decomposition → Router → Retriever → Analyst → Responder |
+| 🧪 **HyDE Retrieval** | Generates hypothetical answers to improve vector search precision |
+| ✂️ **Query Decomposition** | Breaks compound questions into atomic sub-queries before retrieval |
+| 📚 **60+ Official Documents** | Processes UK gov guidance, Immigration Rules, and policy documents |
+| 🔍 **Hybrid Search** | Combines semantic search with BM25 keyword matching via RRF |
+| 🌐 **Web Search** | Fetches latest policy updates from gov.uk via Tavily |
+| 💬 **Conversation Memory** | SQLite-backed persistence — history survives process restarts |
+| 📊 **Confidence Scoring** | Rates answer reliability (High/Medium/Low) |
+| 📝 **Source Citations** | Every answer includes document references and page numbers |
+| 🔄 **Auto Document Updater** | Polls GOV.UK Atom feeds daily and incrementally updates ChromaDB |
+| ⚙️ **Centralised Config** | Single `.env`-backed settings module — no scattered `os.getenv()` |
+| 📡 **LangSmith Observability** | Full trace monitoring, latency breakdown, and token tracking |
+| 🌙 **Dark Mode Support** | Modern UI that adapts to system theme |
+| ⚡ **ChromaDB Warmup** | Pre-loads vector database at startup to eliminate cold-start latency |
 
 ---
 
@@ -127,17 +129,19 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
 
 ## 🛠 Tech Stack
 
-| Component           | Technology                                         |
-| ------------------- | -------------------------------------------------- |
-| **LLM**             | Google Gemini 2.5 Flash                            |
-| **Agent Framework** | LangGraph                                          |
-| **Vector Database** | ChromaDB (cosine similarity)                       |
-| **Embeddings**      | sentence-transformers/all-mpnet-base-v2 (768 dims) |
-| **Keyword Search**  | BM25Okapi with Reciprocal Rank Fusion              |
-| **Web Search**      | Tavily API                                         |
-| **Observability**   | LangSmith                                          |
-| **Frontend**        | Streamlit                                          |
-| **Language**        | Python 3.10+                                       |
+| Component | Technology |
+| --- | --- |
+| **LLM** | Google Gemini 2.5 Flash |
+| **Agent Framework** | LangGraph |
+| **Vector Database** | ChromaDB (cosine similarity) |
+| **Embeddings** | sentence-transformers/all-mpnet-base-v2 (768 dims) |
+| **Keyword Search** | BM25Okapi with Reciprocal Rank Fusion |
+| **Web Search** | Tavily API |
+| **Observability** | LangSmith |
+| **Config** | pydantic-settings |
+| **Persistence** | SQLite (conversation history + updater state) |
+| **Frontend** | Streamlit |
+| **Language** | Python 3.10+ |
 
 ---
 
@@ -152,49 +156,53 @@ The system uses **Agentic RAG** (Retrieval-Augmented Generation) — combining t
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/japapolicy-ai.git
-cd japapolicy-ai
+git clone https://github.com/Ojey-egwuda/JapaPolicy-AI-Agentic-.git
+cd JapaPolicy-AI-Agentic-
 ```
 
 ### Step 2: Create Virtual Environment
 
 ```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
 # macOS/Linux
 python3 -m venv venv
 source venv/bin/activate
+
+# Windows
+python -m venv venv
+venv\Scripts\activate
 ```
 
 ### Step 3: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
-pip install langsmith
+
+# Dev dependencies (for running tests)
+pip install -r requirements-dev.txt
 ```
 
 ### Step 4: Set Up Environment Variables
 
-Create a `.env` file in the project root:
+Copy `.env.example` to `.env` and fill in your keys:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 # Required
 GOOGLE_API_KEY=your_google_api_key_here
-GOOGLE_MODEL=gemini-2.5-flash
 
 # Optional — web search (recommended)
-TAVILY_API_KEY=tvly-your_tavily_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here
 
-# Optional — observability (recommended)
-LANGSMITH_API_KEY=ls__your_key_here
+# Optional — observability
+LANGSMITH_API_KEY=your_langsmith_api_key_here
 LANGSMITH_PROJECT=japapolicy-ai
-LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
 
 **Get API Keys:**
-
 - Google API Key: [Google AI Studio](https://aistudio.google.com/app/apikey)
 - Tavily API Key: [Tavily](https://tavily.com/)
 - LangSmith Key: [LangSmith](https://smith.langchain.com) → Settings → API Keys
@@ -237,21 +245,9 @@ Expected output:
 streamlit run streamlit_app.py
 ```
 
-Then open your browser to `http://localhost:8501`
+Open your browser to `http://localhost:8501`
 
-### Option 2: Command Line — Test Mode
-
-```bash
-python -m src.app --test
-```
-
-### Option 3: Command Line — Interactive Mode
-
-```bash
-python -m src.app
-```
-
-### Option 4: Python API
+### Option 2: Python API
 
 ```python
 from src.app import AgenticRAGAssistant
@@ -273,31 +269,50 @@ print(f"Query type: {result['query_type']}")
 ## 📁 Project Structure
 
 ```
-japapolicy-ai/
+JapaPolicy-AI-Agentic/
 │
-├── data/                       # UK immigration PDF documents
+├── data/                        # UK immigration PDF documents
 │   └── *.pdf
 │
-├── chroma_db/                  # Vector database (auto-generated)
+├── chroma_db/                   # Vector database (auto-generated)
+│
+├── logs/                        # Cron / updater logs
 │
 ├── src/
 │   ├── __init__.py
-│   ├── app.py                  # Main application & AgenticRAGAssistant class
-│   ├── state.py                # AgentState TypedDict definition
-│   ├── tools.py                # Tool implementations (search, calculate, etc.)
-│   ├── workers.py              # Router, Analyst, Responder agents
-│   ├── decomposition.py        # Decomposition agent (pre-router)
-│   ├── hyde_retriever.py       # HyDE-enhanced retriever agent
-│   ├── graph.py                # LangGraph workflow definition
-│   ├── tracing.py              # LangSmith observability setup
-│   └── vectordb.py             # ChromaDB wrapper with hybrid search + caching
+│   ├── config.py                # Centralised pydantic-settings (single source of truth)
+│   ├── app.py                   # Main application & AgenticRAGAssistant class
+│   ├── state.py                 # AgentState TypedDict definition
+│   ├── tools.py                 # Tool implementations (search, calculate, etc.)
+│   ├── workers.py               # Router, Analyst, Responder agents
+│   ├── decomposition.py         # Decomposition agent (pre-router)
+│   ├── hyde_retriever.py        # HyDE-enhanced retriever agent
+│   ├── graph.py                 # LangGraph workflow definition
+│   ├── persistence.py           # SQLite-backed conversation history store
+│   ├── updater.py               # Incremental GOV.UK document updater
+│   ├── tracing.py               # LangSmith observability setup
+│   ├── utils.py                 # Shared utility functions
+│   └── vectordb.py              # ChromaDB wrapper with hybrid search + caching
 │
-├── streamlit_app.py            # Streamlit web interface
-├── build_db.py                 # Database builder script
-├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (create this)
-├── UK.png                      # UK flag image for UI
-└── README.md                   # This file
+├── tests/
+│   ├── conftest.py              # Shared fixtures and dependency stubs
+│   ├── test_config.py           # Settings / environment variable tests
+│   ├── test_decomposition.py    # Decomposition agent tests
+│   ├── test_persistence.py      # ConversationStore tests
+│   ├── test_tools.py            # Tool unit tests
+│   ├── test_updater.py          # Incremental updater tests
+│   └── test_workers.py          # Router / Analyst / Responder agent tests
+│
+├── streamlit_app.py             # Streamlit web interface
+├── build_db.py                  # Database builder script
+├── requirements.txt             # Runtime dependencies
+├── requirements-dev.txt         # Dev / test dependencies
+├── .env.example                 # Environment variable template
+├── .env                         # Your local secrets (never commit this)
+├── conversations.db             # SQLite conversation history (auto-created)
+├── updater_state.db             # SQLite updater state (auto-created)
+├── UK.png                       # UK flag image for UI
+└── README.md                    # This file
 ```
 
 ---
@@ -338,40 +353,106 @@ Generates the final user-facing answer with section headers, bullet points, sour
 
 ### Tools Available
 
-| Tool                      | Purpose                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| `search_immigration_docs` | Hybrid vector + BM25 search through 60+ documents       |
-| `search_govuk_updates`    | Live web search for recent policy changes via Tavily    |
-| `calculate_visa_dates`    | ILR eligibility dates, visa expiry, absence compliance  |
+| Tool | Purpose |
+| --- | --- |
+| `search_immigration_docs` | Hybrid vector + BM25 search through 60+ documents |
+| `search_govuk_updates` | Live web search for recent policy changes via Tavily |
+| `calculate_visa_dates` | ILR eligibility dates, visa expiry, absence compliance |
 | `check_basic_eligibility` | Pre-check salary, sponsorship, and English requirements |
+
+---
+
+## 🔄 Document Updater
+
+The updater keeps ChromaDB in sync with GOV.UK automatically — **no full rebuild needed**.
+
+### How it works
+
+1. Polls two GOV.UK Atom feeds (UKVI + Home Office) for new/changed entries
+2. Proactively checks 9 key guidance pages (Skilled Worker, Student, Graduate, etc.)
+3. For each changed document: deletes old ChromaDB chunks (by `govuk_path` metadata), re-embeds, re-indexes
+4. Tracks every processed document in SQLite to avoid double-processing
+5. Handles withdrawn documents (removes them from ChromaDB)
+
+### Running manually
+
+```bash
+# Check what would be updated (dry status view)
+python -m src.updater --status
+
+# Run one update cycle now
+python -m src.updater
+
+# Run on a schedule (every N minutes)
+python -m src.updater --schedule 1440
+```
+
+### Automated daily cron (2am)
+
+The cron job was set up during installation. To verify it is active:
+
+```bash
+crontab -l
+```
+
+You should see:
+
+```
+0 2 * * * cd /path/to/JapaPolicy-AI-Agentic && ./venv/bin/python -m src.updater >> logs/updater.log 2>&1
+```
+
+---
+
+## 🧪 Testing
+
+The test suite runs fully offline — all heavy dependencies (ChromaDB, sentence-transformers, LangChain) are stubbed when not installed, and use real packages when the venv is active.
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run a specific module
+pytest tests/test_config.py -v
+pytest tests/test_persistence.py -v
+pytest tests/test_tools.py -v
+pytest tests/test_decomposition.py -v
+pytest tests/test_workers.py -v
+pytest tests/test_updater.py -v
+```
+
+**Test coverage:**
+
+| Module | Tests |
+| --- | --- |
+| `src/config.py` | 8 — defaults, overrides, env isolation |
+| `src/decomposition.py` | 11 — compound detection, rule-based, LLM path, dedup |
+| `src/persistence.py` | 10 — add/get/clear, max turns, thread isolation |
+| `src/tools.py` | 11 — date calculator, eligibility checker, doc search |
+| `src/workers.py` | 16 — router, analyst, responder chains |
+| `src/updater.py` | 37 — tracker, feed parsing, Content API, PDF, process_path |
 
 ---
 
 ## 💬 Example Queries
 
 **Simple eligibility**
-
 - "What is the minimum salary for a Skilled Worker visa?"
 - "Am I exempt from the English language test with a Nigerian degree?"
 - "Can I bring my family on a Student visa?"
 
 **Visa switching**
-
 - "Can I switch from a Graduate visa to a Skilled Worker visa inside the UK?"
 - "Can a visitor switch to a spouse visa without leaving the UK?"
 
 **Settlement (ILR)**
-
 - "How long do I need to be on a Skilled Worker visa before applying for ILR?"
 - "I spent 210 days outside the UK across 5 years — am I still eligible for ILR?"
 
 **Section 3C / pending applications**
-
 - "My visa expires next week but my extension is pending — can I still work?"
 - "My sponsor's licence was suspended while my application is pending — what happens?"
 
 **Complex compound queries**
-
 - "I'm on a Graduate visa expiring in 6 weeks, I have a job offer for £35,000, my employer has a sponsor licence — can I switch to Skilled Worker, and if my application is pending can I still work and travel to Nigeria?"
 
 ---
@@ -380,22 +461,20 @@ Generates the final user-facing answer with section headers, bullet points, sour
 
 Benchmarked using LangSmith traces across 10 complex immigration queries:
 
-| Node                             | Typical Latency              |
-| -------------------------------- | ---------------------------- |
-| Decomposition                    | 0–2s (0s for simple queries) |
-| Router                           | ~1.5–2s                      |
-| Retriever (HyDE + 2 sub-queries) | ~8–10s                       |
-| Analyst                          | ~10–13s                      |
-| Responder                        | ~5–6s                        |
-| **Total end-to-end**             | **~28–35s**                  |
+| Node | Typical Latency |
+| --- | --- |
+| Decomposition | 0–2s (0s for simple queries) |
+| Router | ~1.5–2s |
+| Retriever (HyDE + 2 sub-queries) | ~8–10s |
+| Analyst | ~10–13s |
+| Responder | ~5–6s |
+| **Total end-to-end** | **~28–35s** |
 
 **Retrieval quality:**
-
 - HyDE vector search: 87–93% cosine similarity on official documents
 - Without HyDE (raw query): often 0 results on the same queries
 
 **Confidence distribution across 10 stress-test queries:**
-
 - HIGH (≥0.8): 8/10 queries
 - MEDIUM (0.6–0.8): 2/10 queries
 - LOW: 0/10 queries
@@ -404,14 +483,14 @@ Benchmarked using LangSmith traces across 10 complex immigration queries:
 
 ## ⚠️ Limitations
 
-| Limitation             | Description                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| **Not Legal Advice**   | This is an AI assistant, not a qualified immigration adviser                  |
-| **Document Freshness** | Answers depend on the documents in your database — rebuild periodically       |
-| **SOC Table Lookup**   | Specific going rates require Appendix Skilled Occupations Tables 1–3 in data/ |
-| **Processing Times**   | Live UKVI processing times require Tavily API for accurate results            |
-| **Complex Cases**      | Edge cases may require professional consultation                              |
-| **UK Only**            | Focused exclusively on UK immigration                                         |
+| Limitation | Description |
+| --- | --- |
+| **Not Legal Advice** | This is an AI assistant, not a qualified immigration adviser |
+| **Document Freshness** | Answers depend on the documents in your database — the auto-updater keeps gov.uk guidance current, but PDF-only sources require a manual rebuild |
+| **SOC Table Lookup** | Specific going rates require Appendix Skilled Occupations Tables 1–3 in data/ |
+| **Processing Times** | Live UKVI processing times require Tavily API for accurate results |
+| **Complex Cases** | Edge cases may require professional consultation |
+| **UK Only** | Focused exclusively on UK immigration |
 
 ---
 
@@ -419,7 +498,6 @@ Benchmarked using LangSmith traces across 10 complex immigration queries:
 
 - [ ] Contextual compression to further reduce analyst token cost
 - [ ] Semantic caching for repeated queries
-- [ ] Document freshness checking with auto-rebuild alerts
 - [ ] User feedback mechanism with LangSmith annotation
 - [ ] API endpoint for third-party integration
 - [ ] Multi-language support
@@ -433,7 +511,7 @@ Benchmarked using LangSmith traces across 10 complex immigration queries:
 **Ojonugwa Egwuda**
 
 - LinkedIn: [linkedin.com/in/egwudaojonugwa](https://www.linkedin.com/in/egwudaojonugwa/)
-- GitHub: [github.com/ojey-egwuda](https://github.com/Ojey-egwuda)
+- GitHub: [github.com/Ojey-egwuda](https://github.com/Ojey-egwuda)
 
 ---
 
