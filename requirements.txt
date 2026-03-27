@@ -104,9 +104,9 @@ pydantic_core==2.41.4
 pydeck==0.9.1
 Pygments==2.19.2
 pypdf==6.1.2
+PyPika==0.48.9
 pyproject_hooks==1.2.0
 pyreadline3==3.5.4
-python-3.11
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 pytz==2025.2
